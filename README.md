@@ -1,19 +1,27 @@
-# Agentic Coding, End-to-End (Rust Jumpman Clone Example)
+# Agentic Coding, End-to-End (Python → Rust → C++ Jumpman Clone)
 
-`Rust: cargo run`
+This repo is an experiment in **agentic coding**: collaborating with an AI agent that plans work, edits files, evaluates results, and iterates until the software matches a spec.
 
-This repo contains a small Jumpman-style platformer with a primary Rust + Macroquad implementation in `mario-rust/`. It also includes a deterministic C++ port in `mario-cpp/` and a Python/Pygame version in `mario-python/`. This README uses the Rust codebase as a concrete example of **agentic coding**: a workflow where an AI agent plans work, makes changes with tools, evaluates results, and iterates until the software is ready to ship.
+The same game exists in three versions, built from the easiest language (Python) to the hardest (C++). Each successive version is a port of the last one, beginning with Python:
 
-## Quickstart (Rust)
+1. `mario-python/` — Python + Pygame (original)
+2. `mario-rust/` — Rust + Macroquad (port of the Python version)
+3. `mario-cpp/` — C++20 (port of the Rust version)
 
-```bash
-cd mario-rust
-cargo run
-```
+Below, this README uses the Rust port as a concrete example when pointing at file paths and architecture, but the workflow is the same across all three versions.
 
-- Controls + level format: see `mario-rust/README.md`
-- C++ port: see `mario-cpp/README.md`
-- Python version: see `mario-python/README.md`
+## Quickstart
+
+- Python: `cd mario-python && python src/main.py` (setup + controls: `mario-python/README.md`)
+- Rust: `cd mario-rust && cargo run` (controls + level format: `mario-rust/README.md`)
+- C++: build/run instructions: `mario-cpp/README.md`
+
+## How this repo was built (in practice)
+
+- I gave the agent a broad outline for the game and looked at what it produced first.
+- When there were bugs or missing features, I prompted the agent to fix/add them, then reran the game to verify.
+- After the Python version stabilized, I repeated the same loop while porting forward (Python → Rust → C++).
+- I used the repo’s current `AGENTS.md` as the standing instruction set for the agent while making changes.
 
 ## What “agentic coding” means
 
@@ -56,9 +64,11 @@ If any of these are unclear, resolve that *before* writing code: unclear goals p
 
 ---
 
-## 2) AGENTS.md initialization (make the repo “agent-friendly”)
+## 2) AGENTS.md (make the repo “agent-friendly”)
 
-`AGENTS.md` is a short, repo-local contract: rules and context an agent should follow automatically.
+I used this repo’s root `AGENTS.md` during development to keep the agent operating in a consistent loop (plan → execute → evaluate → finish) and to push it to ask for clarification instead of guessing.
+
+More generally, `AGENTS.md` is a short, repo-local contract: rules and context an agent should follow automatically.
 
 This repo already has `AGENTS.md` at the root. In general, a strong `AGENTS.md` includes:
 
@@ -138,6 +148,8 @@ The agent should propose a plan, implement the smallest working slice, and only 
 
 Agentic iteration is: **one hypothesis → one diff → one verification → repeat**.
 
+In this project, that loop applied both to feature work (fix bugs / add missing features) and to each port (keep behavior aligned, then iterate where it diverged).
+
 **A practical iteration sequence for the Jumpman clone**
 
 1. **Make it run:** window + main loop (`mario-rust/src/main.rs`).
@@ -173,32 +185,32 @@ Shipping is mostly checklist work:
 ```text
 .
 ├── AGENTS.md
-├── mario-cpp/
-│   ├── CMakeLists.txt
-│   ├── README.md
-│   ├── assets/
-│   ├── core/
-│   ├── app/
-│   └── tests/
 ├── mario-python/
 │   ├── README.md
 │   └── src/
-└── mario-rust/
-    ├── Cargo.toml
+├── mario-rust/
+│   ├── Cargo.toml
+│   ├── README.md
+│   ├── assets/
+│   │   └── levels/level1.txt
+│   └── src/
+│       ├── main.rs
+│       └── game/
+│           ├── mod.rs
+│           ├── world.rs
+│           ├── player.rs
+│           ├── enemy.rs
+│           ├── physics.rs
+│           ├── audio.rs
+│           ├── sprites.rs
+│           └── background.rs
+└── mario-cpp/
+    ├── CMakeLists.txt
     ├── README.md
     ├── assets/
-    │   └── levels/level1.txt
-    └── src/
-        ├── main.rs
-        └── game/
-            ├── mod.rs
-            ├── world.rs
-            ├── player.rs
-            ├── enemy.rs
-            ├── physics.rs
-            ├── audio.rs
-            ├── sprites.rs
-            └── background.rs
+    ├── core/
+    ├── app/
+    └── tests/
 ```
 
 ### Appendix
@@ -206,4 +218,3 @@ Shipping is mostly checklist work:
 - During the process of development, the agent exhibited emergent behaviors, such as including invincibility frames after taking damage, which were not explicitly requested but improved gameplay.
 - The agent also designed the power-up player sprite to look like Luigi instead of Jumpman, showcasing creativity within the constraints provided.
 - All assets used are original, produced by the agent.
-# mario
