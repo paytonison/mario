@@ -1,0 +1,18 @@
+Asset Pack (original, non-derivative)
+
+Files:
+- sprocket_character_32x32.png  (4x3 grid, 12 frames)
+  Order:
+    Row1: idle0, idle1, run0, run1
+    Row2: run2, run3, jump, fall
+    Row3: hurt, celebrate, idle_alt0(power badge), idle_alt1(power badge)
+
+- chestnut_guy_32x32.png (4x2 grid, 8 frames)
+  Row1: walk0..walk3
+  Row2: squish0..squish1, angry0..angry1
+
+- icons_ui_16x16.png (8x2 grid)
+  Row1: coin0..coin3, powerup0..powerup3
+  Row2: heart, spikes, ladder, flag, blank, blank, blank, blank
+
+- tileset_16x16.png (8x4 grid, 32 tiles) — simple ground/brick/platform/background variants
