@@ -1,0 +1,8 @@
+#pragma once
+
+namespace mario::tests {
+
+inline constexpr const char* kMarioCppRootDir = "@MARIO_CPP_ROOT_DIR_ESCAPED@";
+
+}  // namespace mario::tests
+
