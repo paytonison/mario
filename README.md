@@ -1,220 +1,122 @@
-# Agentic Coding, End-to-End (Python → Rust → C++ Jumpman Clone)
+# Jumpman: Platformer Porting Trilogy (Python → Rust → C++)
 
-This repo is an experiment in **agentic coding**: collaborating with an AI agent that plans work, edits files, evaluates results, and iterates until the software matches a spec.
+A small, finished platformer built three times—then **ported forward** from an easier language to a harder one while keeping the game spec consistent. This repo exists to prove one thing clearly: I can take a project from **cradle → shipped** and then do disciplined, behavior-preserving ports across stacks.
 
-The same game exists in three versions, built from the easiest language (Python) to the hardest (C++). Each successive version is a port of the last one, beginning with Python:
+## What this demonstrates
 
-1. `mario-python/` — Python + Pygame (original)
+- Shipping a complete vertical slice (title → play → win/lose → restart).
+- Porting the same game forward **Python → Rust → C++** while preserving core behavior.
+- Practical engineering loop: scope → implement → debug → document → package.
+- A clean sandbox for agent tooling + automated evaluation (build/run correctness, regression cases).
+
+## Implementations
+
+Each directory is a full, runnable version:
+
+1. `mario-python/` — Python + Pygame (original implementation)
 2. `mario-rust/` — Rust + Macroquad (port of the Python version)
 3. `mario-cpp/` — C++20 (port of the Rust version)
 
-Below, this README uses the Rust port as a concrete example when pointing at file paths and architecture, but the workflow is the same across all three versions.
+(Directory names keep the historical prefix; the project itself is a **generic platformer**. No Nintendo assets are used.)
 
 ## Quickstart
 
-- Python: `cd mario-python && python src/main.py` (setup + controls: `mario-python/README.md`)
-- Rust: `cd mario-rust && cargo run` (controls + level format: `mario-rust/README.md`)
-- C++: build/run instructions: `mario-cpp/README.md`
+- Python: `cd mario-python && python src/main.py`  
+  See `mario-python/README.md` for setup + controls.
 
-## How this repo was built (in practice)
+- Rust: `cd mario-rust && cargo run`  
+  See `mario-rust/README.md` for controls + level format.
 
-- I gave the agent a broad outline for the game and looked at what it produced first.
-- When there were bugs or missing features, I prompted the agent to fix/add them, then reran the game to verify.
-- After the Python version stabilized, I repeated the same loop while porting forward (Python → Rust → C++).
-- I used the repo’s current `AGENTS.md` as the standing instruction set for the agent while making changes.
+- C++: `cd mario-cpp && mkdir -p build && cd build && cmake .. && cmake --build . && ./jumpman`  
+  See `mario-cpp/README.md` for platform notes.
 
-## What “agentic coding” means
+## Porting philosophy
 
-Agentic coding treats the model as a software teammate that can:
+The point of the trilogy is not “three unrelated implementations.” It’s **one spec**, carried forward:
 
-1. **Conceptualize**: clarify goals, constraints, and “definition of done”.
-2. **Plan**: break work into small, verifiable steps.
-3. **Execute**: change code/doc/tests and run local checks.
-4. **Evaluate**: compare results to acceptance criteria (not vibes).
-5. **Iterate + Ship**: tighten the loop until the project is releasable.
+- Same high-level loop: title → playing → level complete / death → restart.
+- Same world representation: ASCII level input (where supported) and equivalent collision rules.
+- Same “feel” targets: acceleration/deceleration, gravity, jump arc, coyote time / jump buffer (if implemented).
+- Same gameplay contracts: enemies hurt you, power-up changes player state, score increments are consistent.
 
-The key difference vs. “chatting about code”: every step is anchored in the repo, in files, with explicit constraints and checks.
+What is allowed to change per port:
+- The rendering/input framework (Pygame vs Macroquad vs custom C++ loop).
+- Data layout and architecture (idiomatic Python vs Rust ownership/borrowing vs C++ RAII).
+- Performance/memory choices and build tooling.
 
----
+## How to read this as a portfolio project
 
-## 1) Conceptualization (turn a vibe into a buildable target)
+If you only have two minutes:
 
-Start by writing a tight objective and boundaries.
+- Start in `mario-python/` to see the original design and the “fast iteration” version.
+- Jump to `mario-rust/` to see the first serious port under stricter constraints.
+- Finish with `mario-cpp/` to see the hardest version and the cleanest separation of “core” from “app”.
 
-**Example (Rust Jumpman clone):**
+The important signal is not novelty. It’s execution: finish a game, then port it twice without collapsing the spec.
 
-- **Objective:** a playable 1-level platformer with a title screen, a goal condition, scoring, enemies, and a restart loop.
-- **Constraints:** Rust stable; no copyrighted Nintendo assets; keep dependencies minimal (this project uses `macroquad`).
-- **Non-goals (for v1):** world editor, multiple biomes, save system, network play.
-- **Acceptance criteria (vertical slice):**
-  - Title → Playing → LevelComplete loop exists (`mario-rust/src/game/mod.rs`).
-  - The level loads from ASCII (`mario-rust/assets/levels/level1.txt`) and has a fallback if it fails (`mario-rust/src/game/world.rs`).
-  - Player movement feels “platformer-ish” (accel/decel, coyote time, jump buffer, jump cut) (`mario-rust/src/game/player.rs`, `mario-rust/src/game/mod.rs`).
-  - Build + run instructions are documented (`mario-rust/README.md`).
+## Using this repo as an eval harness (agent + tooling)
 
-**Architecture sketch (derived from the code):**
+This repo is intentionally shaped to be easy to evaluate:
 
-- **Game loop:** `mario-rust/src/main.rs` drives `update()` + `draw()` in a loop.
-- **State machine:** `GameState` in `mario-rust/src/game/mod.rs` (Title/Playing/LevelComplete).
-- **Data-driven content:** ASCII levels in `mario-rust/assets/levels/`.
-- **“Feel” tuning:** `Config` in `mario-rust/src/game/mod.rs` centralizes physics constants.
-- **Separation of concerns:** `world.rs`, `player.rs`, `enemy.rs`, `audio.rs`, `physics.rs`, etc.
+- Objective graders: “does it build?”, “does it run?”, “do tests pass?”, “does the level load?”, “does the replay reach LevelComplete?”
+- Natural regression set: every bug/edge case becomes a new test case or dataset item.
+- Realistic agent tasks: fix a build break, implement a feature behind acceptance criteria, refactor without behavior drift.
 
-If any of these are unclear, resolve that *before* writing code: unclear goals produce confident-but-wrong diffs.
+Suggested harness pattern:
+1. Collect real tasks (bug reports, feature tickets, refactors) into a small dataset.
+2. Define graders that are as non-subjective as possible:
+   - compile/build succeeds
+   - unit/integration tests pass (where present)
+   - schema/format checks (level files, config) pass
+   - optional: deterministic input replay reaches expected checkpoints
+3. Run the same dataset against different prompts/models/tooling configs and compare deltas.
+4. Promote any failure into a permanent regression case.
 
----
+If you’re using OpenAI’s Evals tooling: this project is a clean “ground truth” target because build/test outcomes are hard signals rather than vibes.
 
-## 2) AGENTS.md (make the repo “agent-friendly”)
-
-I used this repo’s root `AGENTS.md` during development to keep the agent operating in a consistent loop (plan → execute → evaluate → finish) and to push it to ask for clarification instead of guessing.
-
-More generally, `AGENTS.md` is a short, repo-local contract: rules and context an agent should follow automatically.
-
-This repo already has `AGENTS.md` at the root. In general, a strong `AGENTS.md` includes:
-
-- **How to work:** small diffs, verify behavior, don’t assume missing context.
-- **Project constraints:** e.g., “no copyrighted assets”, “avoid new dependencies”, “run `cargo fmt`”.
-- **Where truth lives:** file paths for configs, entry points, and domain rules.
-- **Definition of done:** what “finished” means for a change.
-
-**Pattern: one root file + optional subproject files**
-
-- Put global rules in root `AGENTS.md`.
-- Add more specific `AGENTS.md` files inside subprojects when needed (e.g., `mario-rust/`) to encode local conventions like “physics constants live in `Config`”.
-
-**Minimal example (template you can adapt):**
-
-```md
-# AGENTS.md (example)
-- Prefer small, reviewable diffs.
-- Ask clarifying questions when behavior is underspecified.
-- For `mario-rust/`: keep tuning constants in `src/game/mod.rs:Config`.
-- Validate with: `cargo fmt`, `cargo test`, `cargo run` (as applicable).
-- Do not add copyrighted Jumpman assets.
-```
-
----
-
-## 3) Prompting (turn goals into executable tasks)
-
-A good prompt is basically a mini-spec. Include:
-
-- **Where:** exact directory/files (e.g., `mario-rust/src/game/player.rs`).
-- **What:** the desired behavior.
-- **Constraints:** dependencies, performance, style, gameplay feel.
-- **Acceptance criteria:** how you’ll confirm it worked.
-- **How to verify:** commands to run.
-
-**Prompt template**
+## Repository layout
 
 ```text
-In `mario-rust/`, implement <feature>.
-
-Context:
-- Game loop is Macroquad; `Game` is in `src/game/mod.rs`.
-- Levels load from `assets/levels/*.txt` via `World::load` in `src/game/world.rs`.
-
-Constraints:
-- Keep changes minimal; no new dependencies.
-- Keep tuning constants in `Config` (`src/game/mod.rs`).
-
-Acceptance criteria:
-- <bullet list of observable outcomes>
-
-Verify:
-- `cargo fmt`
-- `cargo run`
-```
-
-**Example prompts (using the existing code layout)**
-
-1) *Add a second level and a level select flow*
-
-- Update `mario-rust/assets/levels/` with `level2.txt`.
-- Add `GameState::LevelSelect` (or a simpler approach) in `mario-rust/src/game/mod.rs`.
-- Ensure `World::load()` is called with the selected level path.
-- Acceptance: pressing a key on title lets you choose a level, then play it.
-
-2) *Add a “coyote time” tuning HUD for feel iteration*
-
-- Expose `Config::coyote_time` and `Config::jump_buffer_time` in a debug overlay.
-- Acceptance: values render on screen; changing constants changes feel predictably.
-
-The agent should propose a plan, implement the smallest working slice, and only then iterate on polish.
-
----
-
-## 4) Iterative development (tight loops, fast learning)
-
-Agentic iteration is: **one hypothesis → one diff → one verification → repeat**.
-
-In this project, that loop applied both to feature work (fix bugs / add missing features) and to each port (keep behavior aligned, then iterate where it diverged).
-
-**A practical iteration sequence for the Jumpman clone**
-
-1. **Make it run:** window + main loop (`mario-rust/src/main.rs`).
-2. **Make it playable:** player movement + collisions (`mario-rust/src/game/player.rs`, `mario-rust/src/game/physics.rs`).
-3. **Make it a game:** world/goal/scoring (`mario-rust/src/game/world.rs`, `mario-rust/src/game/mod.rs`).
-4. **Add threats + rewards:** enemies, coins, mushrooms (`mario-rust/src/game/enemy.rs`, `mario-rust/src/game/world.rs`).
-5. **Polish:** camera/background/audio/HUD (`mario-rust/src/game/background.rs`, `mario-rust/src/game/audio.rs`).
-
-**How the agent evaluates each step**
-
-- Compares results to acceptance criteria (e.g., “coin increments score by 200”).
-- Runs a local verification command (often `cargo run` for a game).
-- Keeps gameplay constants centralized (in this project, `Config` in `mario-rust/src/game/mod.rs`) so tuning doesn’t sprawl.
-
-If the behavior is subjective (“jump feels floaty”), define a measurable surrogate (jump height/time, terminal velocity, accel/decel, etc.) and iterate with small changes.
-
----
-
-## 5) Shipping (turn “works on my machine” into a deliverable)
-
-Shipping is mostly checklist work:
-
-1. **Release build:** `cd mario-rust && cargo build --release`
-2. **Asset bundling:** this project uses `set_pc_assets_folder("assets")` (`mario-rust/src/game/mod.rs`), so the shipped binary must be able to find `assets/` at runtime (typically by distributing the `assets/` folder alongside the executable and running from that directory).
-3. **Docs:** keep `mario-rust/README.md` accurate (controls, level format, audio overrides).
-4. **Sanity pass:** play through level end-to-end; verify restart/quit flows.
-5. **Versioning:** tag releases and record changes (e.g., changelog) if you’re distributing builds.
-
----
-
-## Repo layout
-
-```text
-.
-├── AGENTS.md
+jumpman/
 ├── mario-python/
 │   ├── README.md
 │   └── src/
 ├── mario-rust/
-│   ├── Cargo.toml
 │   ├── README.md
+│   ├── Cargo.toml
 │   ├── assets/
-│   │   └── levels/level1.txt
 │   └── src/
-│       ├── main.rs
-│       └── game/
-│           ├── mod.rs
-│           ├── world.rs
-│           ├── player.rs
-│           ├── enemy.rs
-│           ├── physics.rs
-│           ├── audio.rs
-│           ├── sprites.rs
-│           └── background.rs
 └── mario-cpp/
-    ├── CMakeLists.txt
     ├── README.md
+    ├── CMakeLists.txt
     ├── assets/
     ├── core/
     ├── app/
     └── tests/
 ```
 
-### Appendix
+## Agent-assisted development (what “agentic coding” means here)
 
-- During the process of development, the agent exhibited emergent behaviors, such as including invincibility frames after taking damage, which were not explicitly requested but improved gameplay.
-- The agent also designed the power-up player sprite to look like Luigi instead of Jumpman, showcasing creativity within the constraints provided.
-- All assets used are original, produced by the agent.
+I used an agent as a teammate, but not as a magic wand. The loop was:
+
+- Write a tight objective + constraints + acceptance criteria.
+- Ask for a small plan (small diffs, verifiable steps).
+- Implement one slice.
+- Verify locally (build/run/tests).
+- Iterate until the spec is met, then document how to run it.
+
+The agent is a productivity multiplier; the proof of correctness is the repo itself: buildable, runnable, and readable.
+
+## Assets and IP
+
+- No copyrighted Nintendo assets.
+- All included assets are original (produced during development for this project).
+
+## Appendix: notable emergent behavior during development
+
+- The agent introduced small gameplay improvements (e.g., i-frames after damage) that were not explicitly requested but improved playability.
+- The powered-up player sprite ended up as an “alternate palette” character—a cute artifact of the process.
+
+---
+
+If you’re reviewing this for engineering ability: treat it like a systems porting exercise with a game as the substrate.
