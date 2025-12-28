@@ -126,6 +126,12 @@ int main(int argc, char** argv) {
   KeyState prev_keys{};
   KeyState keys = read_keys();
 
+  {
+    mario::core::StepInput autostart{};
+    autostart.start_pressed = true;
+    mario::core::step(state, autostart);
+  }
+
   auto last = Clock::now();
   double accumulator_s = 0.0;
   constexpr double dt_s = 1.0 / 60.0;
@@ -239,8 +245,20 @@ int main(int argc, char** argv) {
     SDL_RenderPresent(renderer);
 
     // Simple HUD via window title (no font dependency).
-    const std::string title =
-        "mario-cpp | score=" + std::to_string(state.score) + " | high=" + std::to_string(state.high_score);
+    std::string title;
+    switch (state.phase) {
+      case mario::core::Phase::Title:
+        title = "mario-cpp | Press Enter to start";
+        break;
+      case mario::core::Phase::Playing:
+        title = "mario-cpp | score=" + std::to_string(state.score) +
+                " | high=" + std::to_string(state.high_score) + " | Esc=title";
+        break;
+      case mario::core::Phase::LevelComplete:
+        title = "mario-cpp | Level complete! R=restart Esc=title | score=" + std::to_string(state.score) +
+                " | high=" + std::to_string(state.high_score);
+        break;
+    }
     SDL_SetWindowTitle(window, title.c_str());
   }
 

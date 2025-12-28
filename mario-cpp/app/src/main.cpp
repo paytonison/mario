@@ -256,6 +256,9 @@ int main(int argc, char** argv) {
     if (args.replay_path.has_value() && i < replay.inputs.size()) {
       input = replay.inputs[i];
     }
+    if (!args.replay_path.has_value() && i == 0) {
+      input.start_pressed = true;
+    }
     used_inputs.push_back(input);
     mario::core::step(state, input);
   }
